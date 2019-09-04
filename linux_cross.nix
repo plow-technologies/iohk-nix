@@ -16,6 +16,7 @@ in
 , writeScriptBin
 , qemu
 , qemuSuffix ? (qemuByHostPlatform hostPlatform)
+, qemuMem ? "1G"
 , iserv-proxy
 , remote-iserv
 , gmp
@@ -34,7 +35,7 @@ let
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting remote-iserv on port $PORT")
-    ${qemu}/bin/qemu-${qemuSuffix} ${remote-iserv}/bin/remote-iserv tmp $PORT &
+    ${qemu}/bin/qemu-${qemuSuffix} -R ${qemuMem} ${remote-iserv}/bin/remote-iserv tmp $PORT &
     (>&2 echo "---| remote-iserv should have started on $PORT")
     RISERV_PID="$!"
     ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
@@ -50,7 +51,7 @@ let
   qemuTestWrapper = writeScriptBin "test-wrapper" ''
     #!${stdenv.shell}
     set -euo pipefail
-    ${qemu}/bin/qemu-${qemuSuffix} $@*
+    ${qemu}/bin/qemu-${qemuSuffix} -R ${qemuMem} $@*
     '';
   testFlags = lib.optionals isLinuxCross [ "--test-wrapper ${qemuTestWrapper}/bin/test-wrapper" ];
   preCheck = lib.optionalString isLinuxCross ''
